@@ -17,6 +17,7 @@
 
 #define debugLed 12
 #define kickPin 0
+#define irPin P5
 bool led_state = 0;
 
 // Adafruit_BNO055 bno = Adafruit_BNO055(55);
@@ -90,7 +91,6 @@ void updateMotorData(const fukuro_common::MotorVel &pwm)
     motor1 = pwm.m1;
     motor2 = pwm.m2;
     motor3 = pwm.m3;
-    // analogWrite(5, pwm.m1);
 }
 // void updateMotorData2(const fukuro_common::MotorVel &pwm)
 // {
@@ -126,19 +126,15 @@ ros::Subscriber<std_msgs::String> string_data("/fukuro_mcu/string", &updateSData
 
 void pwmOut()
 {
-    // Serial2.println("pwmOut start");
     motorKiri.speed(motor1);
     motorKanan.speed(motor2);
     motorBelakang.speed(motor3);
     motorDribKiri.speed(drib1);
     motorDribKanan.speed(drib2);
-    // Serial2.println(motor1);
-    // Serial2.println("pwmOut done");
 }
 
 void bacaEncoder()
 {
-    // Serial2.println();
     velKanan = (double)encoderMotorKanan.getPulses();
     velKiri = (double)encoderMotorKiri.getPulses();
     velBelakang = (double)encoderMotorBelakang.getPulses();
@@ -172,13 +168,13 @@ void bacaBNO()
     // orientation_z = event.orientation.z;
 }
 
-void kickReady()
-{
-}
+// void kickReady()
+// {
+// }
 
 void bacaBola()
 {
-    // stmData.ir=
+    stmData.ir = expansion.digitalRead(irPin);
 }
 
 void IRAM_ATTR encoderMotorKiriISR()
@@ -239,6 +235,7 @@ void PinInit()
     attachInterrupt(digitalPinToInterrupt(13), encoderFreeDepanISR, CHANGE);
     pinMode(debugLed, OUTPUT);
     pinMode(kickPin, OUTPUT);
+    expansion.pinMode(irPin, INPUT);
     // pinMode(16, OUTPUT);
     // pinMode(5, OUTPUT);
 }
@@ -252,8 +249,8 @@ void sensorTask(void *parameters)
         // Serial.println(velKanan);
         resetEncoder();
         // bacaBNO();
-        // bacaBola();
-        kickReady();
+        bacaBola();
+        // kickReady();
         stm.publish(&stmData);
     }
 }

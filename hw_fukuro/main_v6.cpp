@@ -1,25 +1,26 @@
-#include <MotorDC.h>
-#include <Arduino.h>
+#include <mbed.h>
+#include <Motor2pin.h>
 #include <ros.h>
 #include <encoder.h>
-#include <Arduino_FreeRTOS.h>
 #include <fukuro_common/STMData.h>
 #include <fukuro_common/SerialData.h>
-//#include <Adafruit_Sensor.h>
-//#include <Adafruit_BNO055.h>
-//#include <imumaths.h>
+#include <rtos.h>
+// #include <Adafruit_Sensor.h>
+// #include <Adafruit_BNO055.h>
+// #include <imumaths.h>
 
-//#define SDA PC_12
-//#define SCL PB_10
-#define kickpin PA6
-#define kickreadypin PC13
-#define outputrempin PA7
-#define g1 PA1
+// #define SDA PC_12
+// #define SCL PB_10
 
 unsigned char sensor_data[2048];
 unsigned char pwm_data[2048];
 unsigned char kick_data[2048];
 unsigned char brake_data[2048];
+
+DigitalOut kickpin(PA_6);
+DigitalIn kickreadypin(PC_13);
+DigitalOut outputrempin(PA_7);
+DigitalIn g1(PA_1); // tadinya PC_3
 
 // Serial pc(USBTX, USBRX);
 
@@ -29,11 +30,10 @@ unsigned char brake_data[2048];
 // Motor motorBel      (PC_8, PC_3);
 // Motor motorDrib     (PC_9, PA_0);
 // Parameter Lama
-Motor motorKanan(PA0, PA4); // PC_7 PC_1
-Motor motorKiri(PA1, PA5);
-Motor motorBel(PA6, PB5);
-Motor motorDribKanan(PA7, PB4);
-Motor motorDribKiri(PB0, PB3);
+Motor motorKanan(PC_9, PA_0); // PC_7 PC_1
+Motor motorKiri(PC_6, PC_0);
+Motor motorBel(PC_8, PA_4);
+Motor motorDrib(PC_7, PC_1);
 
 double velKiri = 0.0,
        velKanan = 0.0,
@@ -52,7 +52,7 @@ encoderstm encoderMotorFreeDpn(PB_7, PB_0, 269, encoderstm::X4_ENCODING);
 fukuro_common::STMData stmData;
 ros::NodeHandle nh;
 ros::Publisher stm("/fukuro_stm_pc", &stmData);
-float motor1 = 0.0, motor2 = 0.0, motor3 = 0.0, drib1 = 0.0, drib2 = 0.0, sudut = 0.0;
+float motor1 = 0.0, motor2 = 0.0, motor3 = 0.0, motor4 = 0.0, sudut = 0.0;
 uint8_t del_kick = 0;
 bool outputrem = 0;
 
@@ -61,8 +61,7 @@ void updateData(const fukuro_common::SerialData &pwm)
     motor1 = pwm.motor.m1;
     motor2 = pwm.motor.m2;
     motor3 = pwm.motor.m3;
-    drib1 = pwm.kecepatan.speed1;
-    drib2 = pwm.kecepatan.speed2;
+    motor4 = pwm.kecepatan.speed;
     del_kick = pwm.kick;
     outputrem = pwm.motor_brake;
 }
@@ -72,8 +71,7 @@ void PWMOut()
     motorKiri.speed(motor1);
     motorKanan.speed(motor2);
     motorBel.speed(motor3);
-    motorDribKiri.speed(drib1);
-    motorDribKanan.speed(drib2);
+    motorDrib.speed(motor4);
 }
 
 void BacaEncoder()
@@ -154,7 +152,7 @@ void Kick_Thread(void const *pvArgs)
         if (del_kick)
         {
             kickpin = 1;
-            delayMicroseconds(del_kick);
+            wait_ms(del_kick);
             kickpin = 0;
             del_kick = 0;
         }
@@ -170,14 +168,6 @@ void Brake_Thread(void const *pvArgs)
     }
 }
 
-void setup()
-{
-    pinMode(kickpin, OUTPUT);
-    pinMode(kickreadypin, INPUT);
-    pinMode(outputrempin, INPUT);
-    pinMode(g1, OUTPUT);
-}
-
 int main()
 {
     // 0.01 0.0217
@@ -190,8 +180,7 @@ int main()
     //        motorKiri.period(0.005); //tadinya 0.055
     //        motorBel.period(0.006);
 
-    motorDribKanan.period(0.01);
-    motorDribKiri.period(0.01);
+    motorDrib.period(0.01);
 
     nh.initNode();
     nh.subscribe(pc_data);
