@@ -27,8 +27,8 @@ PCF8574 expansion(0x20);
 Motor motorKiri(5, P0, 0, &expansion);
 Motor motorKanan(23, P3, 3, &expansion);
 Motor motorBelakang(14, P2, 2, &expansion);
-Motor motorDribKanan(18, P1, 4, &expansion);
-Motor motorDribKiri(19, P4, 1, &expansion);
+Motor motorDribKanan(18, P1, 1, &expansion);
+Motor motorDribKiri(19, P4, 4, &expansion);
 
 Encoder encoderMotorKiri(36, 39, 269);
 Encoder encoderMotorKanan(34, 35, 269);
@@ -305,6 +305,12 @@ void setup()
         digitalWrite(debugLed, LOW);
         delay(200);
     }
+
+    // motorKiri.freq(1000);
+    // motorKanan.freq(1000);
+    // motorBelakang.freq(1000);
+    // motorDribKanan.freq(1000);
+    // motorDribKiri.freq(1000);
 
     // bno.setExtCrystalUse(true);
 

@@ -22,7 +22,7 @@ public:
 
     void speed(float speed);
 
-    void period(float period);
+    void freq(float freq);
 
     void operator=(float value)
     {
