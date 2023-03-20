@@ -2,12 +2,13 @@
 #include <MotorDC.h>
 #include <Encoder_Fukuro.h>
 #include <ros.h>
-// #include <Preferences.h>
+#include <Preferences.h>
 #include <Wire.h>
-// #include <Adafruit_Sensor.h>
-// #include <utility/imumaths.h>
-// #include <Adafruit_BNO055.h>
+#include <Adafruit_Sensor.h>
+#include <utility/imumaths.h>
+#include <Adafruit_BNO055.h>
 // #include <Adafruit_VL53L0X.h>
+#include <ESP32Servo.h>
 #include <fukuro_common/STMData.h>
 #include <fukuro_common/SerialData.h>
 #include <fukuro_common/MotorVel.h>
@@ -20,8 +21,8 @@
 #define irPin P5
 bool led_state = 0;
 
-// Adafruit_BNO055 bno = Adafruit_BNO055(55);
-// Preferences preferences;
+Adafruit_BNO055 bno = Adafruit_BNO055(55);
+Preferences preferences;
 
 PCF8574 expansion(0x20);
 
@@ -161,11 +162,11 @@ void resetEncoder()
 
 void bacaBNO()
 {
-    // sensors_event_t event;
-    // bno.getEvent(&event);
-    // orientation_x = event.orientation.x;
-    // orientation_y = event.orientation.y;
-    // orientation_z = event.orientation.z;
+    sensors_event_t event;
+    bno.getEvent(&event);
+    orientation_x = event.orientation.x;
+    orientation_y = event.orientation.y;
+    orientation_z = event.orientation.z;
 }
 
 // void kickReady()
@@ -248,7 +249,7 @@ void sensorTask(void *parameters)
         bacaEncoder();
         // Serial.println(velKanan);
         resetEncoder();
-        // bacaBNO();
+        bacaBNO();
         bacaBola();
         // kickReady();
         stm.publish(&stmData);
@@ -295,6 +296,7 @@ void setup()
 {
     PinInit();
     // expansion.begin();
+    bno.begin();
     while (!expansion.begin() /*|| !bno.begin()*/)
     {
         digitalWrite(debugLed, HIGH);
@@ -309,7 +311,7 @@ void setup()
     // motorDribKanan.freq(1000);
     // motorDribKiri.freq(1000);
 
-    // bno.setExtCrystalUse(true);
+    bno.setExtCrystalUse(true);
 
     nh.initNode();
     // nh.subscribe(pc_data);
