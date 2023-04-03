@@ -298,6 +298,7 @@ void setup()
     nh.subscribe(motor_data);
     nh.subscribe(dribble_data);
     nh.subscribe(kicker_data);
+    nh.subscribe(servo_data);
 
     nh.advertise(stm);
 
