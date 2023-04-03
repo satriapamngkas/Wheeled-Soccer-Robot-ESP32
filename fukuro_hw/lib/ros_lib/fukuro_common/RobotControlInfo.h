@@ -17,16 +17,25 @@ namespace fukuro_common
       _error_radius_type error_radius;
       typedef float _error_angle_type;
       _error_angle_type error_angle;
+      typedef float _d_error_radius_type;
+      _d_error_radius_type d_error_radius;
+      typedef float _d_error_angle_type;
+      _d_error_angle_type d_error_angle;
       typedef geometry_msgs::Pose2D _setpoint_type;
       _setpoint_type setpoint;
-      typedef bool _plan_type;
-      _plan_type plan;
+      typedef bool _is_plan_type;
+      _is_plan_type is_plan;
+      typedef bool _is_local_type;
+      _is_local_type is_local;
 
     RobotControlInfo():
       error_radius(0),
       error_angle(0),
+      d_error_radius(0),
+      d_error_angle(0),
       setpoint(),
-      plan(0)
+      is_plan(0),
+      is_local(0)
     {
     }
 
@@ -35,14 +44,23 @@ namespace fukuro_common
       int offset = 0;
       offset += serializeAvrFloat64(outbuffer + offset, this->error_radius);
       offset += serializeAvrFloat64(outbuffer + offset, this->error_angle);
+      offset += serializeAvrFloat64(outbuffer + offset, this->d_error_radius);
+      offset += serializeAvrFloat64(outbuffer + offset, this->d_error_angle);
       offset += this->setpoint.serialize(outbuffer + offset);
       union {
         bool real;
         uint8_t base;
-      } u_plan;
-      u_plan.real = this->plan;
-      *(outbuffer + offset + 0) = (u_plan.base >> (8 * 0)) & 0xFF;
-      offset += sizeof(this->plan);
+      } u_is_plan;
+      u_is_plan.real = this->is_plan;
+      *(outbuffer + offset + 0) = (u_is_plan.base >> (8 * 0)) & 0xFF;
+      offset += sizeof(this->is_plan);
+      union {
+        bool real;
+        uint8_t base;
+      } u_is_local;
+      u_is_local.real = this->is_local;
+      *(outbuffer + offset + 0) = (u_is_local.base >> (8 * 0)) & 0xFF;
+      offset += sizeof(this->is_local);
       return offset;
     }
 
@@ -51,15 +69,25 @@ namespace fukuro_common
       int offset = 0;
       offset += deserializeAvrFloat64(inbuffer + offset, &(this->error_radius));
       offset += deserializeAvrFloat64(inbuffer + offset, &(this->error_angle));
+      offset += deserializeAvrFloat64(inbuffer + offset, &(this->d_error_radius));
+      offset += deserializeAvrFloat64(inbuffer + offset, &(this->d_error_angle));
       offset += this->setpoint.deserialize(inbuffer + offset);
       union {
         bool real;
         uint8_t base;
-      } u_plan;
-      u_plan.base = 0;
-      u_plan.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
-      this->plan = u_plan.real;
-      offset += sizeof(this->plan);
+      } u_is_plan;
+      u_is_plan.base = 0;
+      u_is_plan.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      this->is_plan = u_is_plan.real;
+      offset += sizeof(this->is_plan);
+      union {
+        bool real;
+        uint8_t base;
+      } u_is_local;
+      u_is_local.base = 0;
+      u_is_local.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      this->is_local = u_is_local.real;
+      offset += sizeof(this->is_local);
      return offset;
     }
 

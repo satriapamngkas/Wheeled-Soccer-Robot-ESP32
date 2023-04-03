@@ -20,8 +20,8 @@ namespace fukuro_common
       _option_type option;
       typedef std_msgs::String _control_type;
       _control_type control;
-      typedef float _dribbler_speed_type;
-      _dribbler_speed_type dribbler_speed;
+      typedef int32_t _dribbling_mode_type;
+      _dribbling_mode_type dribbling_mode;
       typedef bool _plan_type;
       _plan_type plan;
       typedef bool _approach_ball_type;
@@ -35,7 +35,7 @@ namespace fukuro_common
       target_pose(),
       option(),
       control(),
-      dribbler_speed(0),
+      dribbling_mode(0),
       plan(0),
       approach_ball(0),
       motor_brake(0),
@@ -49,7 +49,16 @@ namespace fukuro_common
       offset += this->target_pose.serialize(outbuffer + offset);
       offset += this->option.serialize(outbuffer + offset);
       offset += this->control.serialize(outbuffer + offset);
-      offset += serializeAvrFloat64(outbuffer + offset, this->dribbler_speed);
+      union {
+        int32_t real;
+        uint32_t base;
+      } u_dribbling_mode;
+      u_dribbling_mode.real = this->dribbling_mode;
+      *(outbuffer + offset + 0) = (u_dribbling_mode.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_dribbling_mode.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_dribbling_mode.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_dribbling_mode.base >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->dribbling_mode);
       union {
         bool real;
         uint8_t base;
@@ -87,7 +96,17 @@ namespace fukuro_common
       offset += this->target_pose.deserialize(inbuffer + offset);
       offset += this->option.deserialize(inbuffer + offset);
       offset += this->control.deserialize(inbuffer + offset);
-      offset += deserializeAvrFloat64(inbuffer + offset, &(this->dribbler_speed));
+      union {
+        int32_t real;
+        uint32_t base;
+      } u_dribbling_mode;
+      u_dribbling_mode.base = 0;
+      u_dribbling_mode.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_dribbling_mode.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_dribbling_mode.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_dribbling_mode.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      this->dribbling_mode = u_dribbling_mode.real;
+      offset += sizeof(this->dribbling_mode);
       union {
         bool real;
         uint8_t base;
@@ -124,7 +143,7 @@ namespace fukuro_common
     }
 
     virtual const char * getType() override { return "fukuro_common/RobotControl"; };
-    virtual const char * getMD5() override { return "d1cd8f601a5db7d70afbd3196ead46cf"; };
+    virtual const char * getMD5() override { return "443a92a508b155bf2adcee0c839453e2"; };
 
   };
 

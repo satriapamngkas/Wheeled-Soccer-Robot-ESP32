@@ -22,6 +22,8 @@ namespace fukuro_common
       _ready_kick_type ready_kick;
       typedef bool _ir_type;
       _ir_type ir;
+      typedef float _distance_type;
+      _distance_type distance;
       typedef float _yaw_type;
       _yaw_type yaw;
 
@@ -30,6 +32,7 @@ namespace fukuro_common
       freeenc(),
       ready_kick(0),
       ir(0),
+      distance(0),
       yaw(0)
     {
     }
@@ -53,6 +56,16 @@ namespace fukuro_common
       u_ir.real = this->ir;
       *(outbuffer + offset + 0) = (u_ir.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->ir);
+      union {
+        float real;
+        uint32_t base;
+      } u_distance;
+      u_distance.real = this->distance;
+      *(outbuffer + offset + 0) = (u_distance.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_distance.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_distance.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_distance.base >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->distance);
       union {
         float real;
         uint32_t base;
@@ -87,6 +100,17 @@ namespace fukuro_common
       u_ir.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
       this->ir = u_ir.real;
       offset += sizeof(this->ir);
+      union {
+        float real;
+        uint32_t base;
+      } u_distance;
+      u_distance.base = 0;
+      u_distance.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_distance.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_distance.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_distance.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      this->distance = u_distance.real;
+      offset += sizeof(this->distance);
       union {
         float real;
         uint32_t base;

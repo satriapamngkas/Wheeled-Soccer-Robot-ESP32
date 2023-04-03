@@ -18,11 +18,17 @@ namespace fukuro_common
       _m2_type m2;
       typedef float _m3_type;
       _m3_type m3;
+      typedef float _dl_type;
+      _dl_type dl;
+      typedef float _dr_type;
+      _dr_type dr;
 
     PWM():
       m1(0),
       m2(0),
-      m3(0)
+      m3(0),
+      dl(0),
+      dr(0)
     {
     }
 
@@ -32,6 +38,8 @@ namespace fukuro_common
       offset += serializeAvrFloat64(outbuffer + offset, this->m1);
       offset += serializeAvrFloat64(outbuffer + offset, this->m2);
       offset += serializeAvrFloat64(outbuffer + offset, this->m3);
+      offset += serializeAvrFloat64(outbuffer + offset, this->dl);
+      offset += serializeAvrFloat64(outbuffer + offset, this->dr);
       return offset;
     }
 
@@ -41,11 +49,13 @@ namespace fukuro_common
       offset += deserializeAvrFloat64(inbuffer + offset, &(this->m1));
       offset += deserializeAvrFloat64(inbuffer + offset, &(this->m2));
       offset += deserializeAvrFloat64(inbuffer + offset, &(this->m3));
+      offset += deserializeAvrFloat64(inbuffer + offset, &(this->dl));
+      offset += deserializeAvrFloat64(inbuffer + offset, &(this->dr));
      return offset;
     }
 
     virtual const char * getType() override { return "fukuro_common/PWM"; };
-    virtual const char * getMD5() override { return "f38f746e36007dc479eedf12d9cd9dbc"; };
+    virtual const char * getMD5() override { return "58ac09ce70b43d400c963b6ae6abf81d"; };
 
   };
 

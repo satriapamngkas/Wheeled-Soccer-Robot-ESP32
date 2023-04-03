@@ -82,7 +82,7 @@ namespace fukuro_common
     }
 
     virtual const char * getType() override { return "fukuro_common/HWController"; };
-    virtual const char * getMD5() override { return "5b17edd995ef9a46dfd3ca5601a27eaf"; };
+    virtual const char * getMD5() override { return "0897f331a92bc0854a645fdfb9d5ab2a"; };
 
   };
 
