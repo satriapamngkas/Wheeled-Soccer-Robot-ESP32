@@ -9,7 +9,7 @@
 #include <utility/imumaths.h>
 #include <Adafruit_BNO055.h>
 // #include <Adafruit_VL53L0X.h>
-// #include <ESP32Servo.h>
+#include <ESP32Servo.h>
 #include <fukuro_common/STMData.h>
 #include <fukuro_common/SerialData.h>
 #include <fukuro_common/MotorVel.h>
@@ -18,13 +18,13 @@
 #include <std_msgs/String.h>
 
 #define debugLed 12
-#define kickPin 0
+#define kickPin 16
 #define irPin P5
+#define servoPin 17
 bool led_state = 0;
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
-// Preferences preferences;
-
+Servo servoKick;
 PCF8574 expansion(0x20);
 
 Motor motorKiri(5, P0, 0, &expansion);
@@ -63,6 +63,7 @@ float motor1 = 0.0,
       orientation_z = 0.0;
 
 uint8_t del_kick = 0,
+        servo_angle = 0,
         // system = 0,
         gyro = 0,
         accel = 0;
@@ -93,6 +94,11 @@ void updateKickData(const std_msgs::UInt8 &pwm)
     del_kick = pwm.data;
 }
 
+void updateServoData(const std_msgs::UInt8 &pwm)
+{
+    servo_angle = pwm.data;
+}
+
 void updateMotorData(const fukuro_common::MotorVel &pwm)
 {
     motor1 = pwm.m1;
@@ -119,6 +125,7 @@ void updateDribbleData(const fukuro_common::DribblerVel &pwm)
     // digitalWrite(debugLed, led_state);
     // digitalWrite(16, led_state);
 }
+
 // void updateDribbleData2(const fukuro_common::DribblerVel &pwm)
 // {
 // }
@@ -129,6 +136,7 @@ ros::Subscriber<fukuro_common::DribblerVel> dribble_data("/fukuro_mcu/dribbler",
 // ros::Subscriber<fukuro_common::DribblerVel> dribble2_data("/fukuro_mcu/dribble2", &updateDribbleData2);
 ros::Subscriber<fukuro_common::SerialData> pc_data("/fukuro_mcu/pwminfo", &updateData);
 ros::Subscriber<std_msgs::UInt8> kicker_data("/fukuro_mcu/kick", &updateKickData);
+ros::Subscriber<std_msgs::UInt8> servo_data("/fukuro_mcu/servo", &updateServoData);
 ros::Subscriber<std_msgs::String> string_data("/fukuro_mcu/string", &updateSData);
 
 void pwmOut()
@@ -138,6 +146,7 @@ void pwmOut()
     motorBelakang.speed(motor3);
     motorDribKiri.speed(drib1);
     motorDribKanan.speed(drib2);
+    servoKick.write(servo_angle);
 }
 
 void bacaEncoder()
@@ -242,6 +251,12 @@ void PinInit()
     pinMode(debugLed, OUTPUT);
     pinMode(kickPin, OUTPUT);
     expansion.pinMode(irPin, INPUT);
+    ESP32PWM::allocateTimer(0);
+    ESP32PWM::allocateTimer(1);
+    ESP32PWM::allocateTimer(2);
+    ESP32PWM::allocateTimer(3);
+    servoKick.setPeriodHertz(50);
+    servoKick.attach(servoPin, 1000, 2000);
     // pinMode(16, OUTPUT);
     // pinMode(5, OUTPUT);
 }
@@ -255,7 +270,7 @@ void sensorTask(void *parameters)
         // Serial.println(velKanan);
         resetEncoder();
         bacaBNO();
-        // bacaBola();
+        bacaBola();
         // kickReady();
         stm.publish(&stmData);
     }
@@ -300,8 +315,8 @@ void rosTask(void *parameters)
 void setup()
 {
     PinInit();
-    // expansion.begin();
-    bno.begin();
+    expansion.begin();
+    // bno.begin();
     // while (!expansion.begin() /*|| !bno.begin()*/)
     // {
     //     digitalWrite(debugLed, HIGH);
@@ -316,7 +331,7 @@ void setup()
     // motorDribKanan.freq(1000);
     // motorDribKiri.freq(1000);
 
-    bno.setExtCrystalUse(true);
+    // bno.setExtCrystalUse(true);
 
     nh.initNode();
     // nh.subscribe(pc_data);

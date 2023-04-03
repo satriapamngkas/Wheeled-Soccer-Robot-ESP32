@@ -7,6 +7,8 @@
 #define FREQUENCY 100
 #define RESOLUTION 8
 
+uint8_t channel = 0;
+
 // PCF8574 expansion(0x20);
 
 class Motor
