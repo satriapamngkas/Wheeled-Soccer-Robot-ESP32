@@ -92,7 +92,7 @@ namespace fukuro_common
     }
 
     virtual const char * getType() override { return "fukuro_common/RobotControlInfo"; };
-    virtual const char * getMD5() override { return "3d219701cbb4b4f70bacc052c397c3a7"; };
+    virtual const char * getMD5() override { return "61119e8a24c6d3be85229e0144bd84c7"; };
 
   };
 

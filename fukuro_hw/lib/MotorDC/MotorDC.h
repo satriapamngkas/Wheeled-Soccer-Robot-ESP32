@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <PCF8574.h>
 
-#define FREQUENCY 100
+#define FREQUENCY 1000
 #define RESOLUTION 8
 
 class Motor

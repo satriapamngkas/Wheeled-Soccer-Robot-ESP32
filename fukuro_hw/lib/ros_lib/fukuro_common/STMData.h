@@ -126,7 +126,7 @@ namespace fukuro_common
     }
 
     virtual const char * getType() override { return "fukuro_common/STMData"; };
-    virtual const char * getMD5() override { return "c340d19f039eed5182086e309e369032"; };
+    virtual const char * getMD5() override { return "9a6d018091262233961140398611f145"; };
 
   };
 

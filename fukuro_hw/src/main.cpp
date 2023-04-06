@@ -24,11 +24,11 @@
 bool led_state = 0;
 
 PCF8574 expansion(0x20);
-Servo servoKick;
+// Servo servoKick;
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 Adafruit_VL53L0X vl = Adafruit_VL53L0X();
 
-Motor motorKiri(5, P0, 0, &expansion);
+Motor motorKiri(5, P0, 5, &expansion);
 Motor motorKanan(23, P3, 3, &expansion);
 Motor motorBelakang(14, P2, 2, &expansion);
 Motor motorDribKanan(18, P1, 1, &expansion);
@@ -121,7 +121,7 @@ void pwmOut()
     motorBelakang.speed(motor3);
     motorDribKiri.speed(drib1);
     motorDribKanan.speed(drib2);
-    servoKick.write(servo_angle);
+    // servoKick.write(servo_angle);
 }
 
 void bacaEncoder()
@@ -227,12 +227,12 @@ void PinInit()
     pinMode(debugLed, OUTPUT);
     pinMode(kickPin, OUTPUT);
     expansion.pinMode(irPin, INPUT);
-    ESP32PWM::allocateTimer(0);
-    ESP32PWM::allocateTimer(1);
-    ESP32PWM::allocateTimer(2);
-    ESP32PWM::allocateTimer(3);
-    servoKick.setPeriodHertz(50);
-    servoKick.attach(servoPin, 1000, 2000);
+    // ESP32PWM::allocateTimer(0);
+    // ESP32PWM::allocateTimer(1);
+    // ESP32PWM::allocateTimer(2);
+    // ESP32PWM::allocateTimer(3);
+    // servoKick.setPeriodHertz(1000);
+    // servoKick.attach(servoPin, 1000, 2000);
 }
 
 void sensorTask(void *parameters)
@@ -278,6 +278,7 @@ void setup()
     PinInit();
     // expansion.begin();
     // bno.begin();
+    // vl.begin();
     while (!expansion.begin() || !bno.begin() || !vl.begin())
     {
         digitalWrite(debugLed, HIGH);
