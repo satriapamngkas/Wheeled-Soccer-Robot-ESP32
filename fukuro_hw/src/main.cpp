@@ -24,20 +24,20 @@
 bool led_state = 0;
 
 PCF8574 expansion(0x20);
-// Servo servoKick;
+Servo servoKick;
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 Adafruit_VL53L0X vl = Adafruit_VL53L0X();
 
 Motor motorKiri(5, P0, 5, &expansion);
 Motor motorKanan(23, P3, 3, &expansion);
 Motor motorBelakang(14, P2, 2, &expansion);
-Motor motorDribKanan(18, P1, 1, &expansion);
+Motor motorDribKanan(18, P1, 6, &expansion);
 Motor motorDribKiri(19, P4, 4, &expansion);
 
 Encoder encoderMotorKiri(36, 39, 269);
 Encoder encoderMotorKanan(34, 35, 269);
 Encoder encoderMotorBelakang(4, 15, 269);
-Encoder encoderFreeKiri(25, 26, 269);
+Encoder encoderFreeKiri(26, 25, 269);
 Encoder encoderFreeKanan(33, 32, 269);
 Encoder encoderFreeDepan(27, 13, 269);
 
@@ -107,7 +107,6 @@ void updateDribbleData(const fukuro_common::DribblerVel &pwm)
     drib2 = pwm.d2;
 }
 
-
 ros::Subscriber<fukuro_common::MotorVel> motor_data("/fukuro_mcu/motor", &updateMotorData);
 ros::Subscriber<fukuro_common::DribblerVel> dribble_data("/fukuro_mcu/dribbler", &updateDribbleData);
 // ros::Subscriber<fukuro_common::SerialData> pc_data("/fukuro_mcu/pwminfo", &updateData);
@@ -121,7 +120,7 @@ void pwmOut()
     motorBelakang.speed(motor3);
     motorDribKiri.speed(drib1);
     motorDribKanan.speed(drib2);
-    // servoKick.write(servo_angle);
+    servoKick.write(servo_angle);
 }
 
 void bacaEncoder()
@@ -152,20 +151,27 @@ void resetEncoder()
 
 void bacaBNO()
 {
-    sensors_event_t event;
-    bno.getEvent(&event);
-    orientation_x = event.orientation.x;
-    stmData.yaw = orientation_x;
+    imu::Quaternion quat = bno.getQuat();
+    double yy = quat.y() * quat.y();
+    double yaw = atan2(2 * (quat.w() * quat.z() + quat.x() * quat.y()), 1 - 2 * (yy + quat.z() * quat.z()));
+    float yawDeg = 57.2958 * yaw;
+    // sensors_event_t event;
+    // bno.getEvent(&event);
+    // orientation_x = event.orientation.x;
+    stmData.yaw = yawDeg;
 }
 
 void bacaBola()
 {
-    VL53L0X_RangingMeasurementData_t measure;
     ir = expansion.digitalRead(irPin);
     stmData.ir = ir;
-    vl.rangingTest(&measure, false);
-    distance = measure.RangeMilliMeter;
-    stmData.distance = distance;
+    // if (ir)
+    // {
+    //     VL53L0X_RangingMeasurementData_t measure;
+    //     vl.rangingTest(&measure, false);
+    //     distance = measure.RangeMilliMeter;
+    //     stmData.distance = distance;
+    // }
 }
 
 void IRAM_ATTR encoderMotorKiriISR()
@@ -231,8 +237,8 @@ void PinInit()
     // ESP32PWM::allocateTimer(1);
     // ESP32PWM::allocateTimer(2);
     // ESP32PWM::allocateTimer(3);
-    // servoKick.setPeriodHertz(1000);
-    // servoKick.attach(servoPin, 1000, 2000);
+    servoKick.setPeriodHertz(50);
+    servoKick.attach(servoPin, 1000, 2000);
 }
 
 void sensorTask(void *parameters)
@@ -276,15 +282,15 @@ void kickTask(void *parameters)
 void setup()
 {
     PinInit();
-    // expansion.begin();
-    // bno.begin();
+    expansion.begin();
+    bno.begin();
     // vl.begin();
-    while (!expansion.begin() || !bno.begin() || !vl.begin())
+    while (!expansion.begin() || !bno.begin() /*|| !vl.begin()*/)
     {
         digitalWrite(debugLed, HIGH);
-        delay(200);
+        delay(150);
         digitalWrite(debugLed, LOW);
-        delay(200);
+        delay(150);
     }
 
     // motorKiri.freq(1000);

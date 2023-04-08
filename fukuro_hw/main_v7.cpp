@@ -2,30 +2,48 @@
 #include <MotorDC.h>
 #include <Encoder_Fukuro.h>
 #include <ros.h>
+#include <Preferences.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_Sensor.h>
+#include <utility/imumaths.h>
+#include <Adafruit_BNO055.h>
+#include <Adafruit_VL53L0X.h>
+#include <ESP32Servo.h>
 #include <fukuro_common/STMData.h>
 #include <fukuro_common/SerialData.h>
+#include <fukuro_common/MotorVel.h>
+#include <fukuro_common/DribblerVel.h>
+#include <std_msgs/UInt8.h>
 #include <std_msgs/String.h>
 
-#define LED_BUILTIN 2
+#define debugLed 12
+#define kickPin 16
+#define irPin P5
+#define servoPin 17
+bool led_state = 0;
 
 PCF8574 expansion(0x20);
-Motor motorKanan(23, P0, &expansion);
-Motor motorKiri(5, P1, &expansion);
-Motor motorBelakang(14, P2, &expansion);
-Motor motorDribKanan(18, P3, &expansion);
-Motor motorDribKiri(19, P4, &expansion);
+Servo servoKick;
+Adafruit_BNO055 bno = Adafruit_BNO055(55);
+Adafruit_VL53L0X vl = Adafruit_VL53L0X();
+
+Motor motorKiri(5, P0, 5, &expansion);
+Motor motorKanan(23, P3, 3, &expansion);
+Motor motorBelakang(14, P2, 2, &expansion);
+Motor motorDribKanan(18, P1, 6, &expansion);
+Motor motorDribKiri(19, P4, 4, &expansion);
 
 Encoder encoderMotorKiri(36, 39, 269);
 Encoder encoderMotorKanan(34, 35, 269);
-Encoder encoderMotorBelakang(13, 4, 269);
-Encoder encoderFreeKiri(25, 27, 269);
-Encoder encoderFreeKanan(32, 15, 269);
-Encoder encoderFreeDepan(26, 33, 269);
+Encoder encoderMotorBelakang(4, 15, 269);
+Encoder encoderFreeKiri(26, 25, 269);
+Encoder encoderFreeKanan(33, 32, 269);
+Encoder encoderFreeDepan(27, 13, 269);
 
 unsigned char sensor_data[2048],
     pwm_data[2048],
-    kick_data[2048],
-    brake_data[2048];
+    kick_data[2048];
 
 double velKiri = 0.0,
        velKanan = 0.0,
@@ -39,35 +57,62 @@ float motor1 = 0.0,
       motor3 = 0.0,
       drib1 = 0.0,
       drib2 = 0.0,
-      sudut = 0.0;
+      sudut = 0.0,
+      orientation_x = 0.0,
+      distance = 0.0;
 
-uint8_t del_kick = 0;
-bool outputrem = 0;
+uint8_t del_kick = 0,
+        servo_angle = 0;
+
+bool ir = 0;
 
 fukuro_common::STMData stmData;
 ros::NodeHandle nh;
 ros::Publisher stm("/fukuro_stm_pc", &stmData);
 
-void updateData(const fukuro_common::SerialData &pwm)
+// void updateData(const fukuro_common::SerialData &pwm)
+// {
+//     // led_state=!led_state;
+//     // digitalWrite(debugLed, led_state);
+//     // digitalWrite(16, led_state);
+//     motor1 = pwm.motor.m1;
+//     motor2 = pwm.motor.m2;
+//     motor3 = pwm.motor.m3;
+//     drib1 = pwm.dribbler.d1;
+//     drib2 = pwm.dribbler.d2;
+//     del_kick = pwm.kick;
+//     outputrem = pwm.motor_brake;
+// }
+
+void updateKickData(const std_msgs::UInt8 &pwm)
 {
-    motor1 = pwm.motor.m1;
-    motor2 = pwm.motor.m2;
-    motor3 = pwm.motor.m3;
-    drib1 = pwm.kecepatan.speed1;
-    drib2 = pwm.kecepatan.speed2;
-    del_kick = pwm.kick;
-    outputrem = pwm.motor_brake;
+    del_kick = pwm.data;
 }
-bool led_state = 0;
-void updateSData(const std_msgs::String &pwm)
+
+void updateServoData(const std_msgs::UInt8 &pwm)
 {
-    led_state = !led_state;
-    digitalWrite(LED_BUILTIN, led_state);
-    digitalWrite(16, led_state);
-    // expansion.digitalWrite(P5, LOW);
+    servo_angle = pwm.data;
 }
-ros::Subscriber<fukuro_common::SerialData> pc_data("/fukuro1/pwminfo", &updateData);
-ros::Subscriber<std_msgs::String> string_data("/fukuro1/string", &updateSData);
+
+void updateMotorData(const fukuro_common::MotorVel &pwm)
+{
+    motor1 = pwm.m1;
+    motor2 = pwm.m2;
+    motor3 = pwm.m3;
+}
+
+void updateDribbleData(const fukuro_common::DribblerVel &pwm)
+{
+    drib1 = pwm.d1;
+    drib2 = pwm.d2;
+}
+
+
+ros::Subscriber<fukuro_common::MotorVel> motor_data("/fukuro_mcu/motor", &updateMotorData);
+ros::Subscriber<fukuro_common::DribblerVel> dribble_data("/fukuro_mcu/dribbler", &updateDribbleData);
+// ros::Subscriber<fukuro_common::SerialData> pc_data("/fukuro_mcu/pwminfo", &updateData);
+ros::Subscriber<std_msgs::UInt8> kicker_data("/fukuro_mcu/kick", &updateKickData);
+ros::Subscriber<std_msgs::UInt8> servo_data("/fukuro_mcu/servo", &updateServoData);
 
 void pwmOut()
 {
@@ -76,6 +121,7 @@ void pwmOut()
     motorBelakang.speed(motor3);
     motorDribKiri.speed(drib1);
     motorDribKanan.speed(drib2);
+    servoKick.write(servo_angle);
 }
 
 void bacaEncoder()
@@ -104,13 +150,22 @@ void resetEncoder()
     encoderFreeDepan.reset();
 }
 
-void kickReady()
+void bacaBNO()
 {
+    sensors_event_t event;
+    bno.getEvent(&event);
+    orientation_x = event.orientation.x;
+    stmData.yaw = orientation_x;
 }
 
 void bacaBola()
 {
-    // stmData.ir=
+    ir = expansion.digitalRead(irPin);
+    stmData.ir = ir;
+    // VL53L0X_RangingMeasurementData_t measure;
+    // vl.rangingTest(&measure, false);
+    // distance = measure.RangeMilliMeter;
+    // stmData.distance = distance;
 }
 
 void IRAM_ATTR encoderMotorKiriISR()
@@ -143,7 +198,7 @@ void IRAM_ATTR encoderFreeDepanISR()
     encoderFreeDepan.encode();
 }
 
-void setPinMode()
+void PinInit()
 {
     pinMode(36, INPUT);
     pinMode(39, INPUT);
@@ -153,22 +208,31 @@ void setPinMode()
     pinMode(35, INPUT);
     attachInterrupt(digitalPinToInterrupt(34), encoderMotorKananISR, CHANGE);
     attachInterrupt(digitalPinToInterrupt(35), encoderMotorKananISR, CHANGE);
-    pinMode(13, INPUT);
     pinMode(4, INPUT);
-    attachInterrupt(digitalPinToInterrupt(13), encoderMotorBelakangISR, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(4), encoderMotorBelakangISR, CHANGE);
-    pinMode(25, INPUT);
-    pinMode(27, INPUT);
-    attachInterrupt(digitalPinToInterrupt(25), encoderFreeKiriISR, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(27), encoderFreeKiriISR, CHANGE);
-    pinMode(32, INPUT);
     pinMode(15, INPUT);
-    attachInterrupt(digitalPinToInterrupt(32), encoderFreeKananISR, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(15), encoderFreeKananISR, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(4), encoderMotorBelakangISR, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(15), encoderMotorBelakangISR, CHANGE);
+    pinMode(25, INPUT);
     pinMode(26, INPUT);
+    attachInterrupt(digitalPinToInterrupt(25), encoderFreeKiriISR, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(26), encoderFreeKiriISR, CHANGE);
     pinMode(33, INPUT);
-    attachInterrupt(digitalPinToInterrupt(26), encoderFreeDepanISR, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(33), encoderFreeDepanISR, CHANGE);
+    pinMode(32, INPUT);
+    attachInterrupt(digitalPinToInterrupt(33), encoderFreeKananISR, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(32), encoderFreeKananISR, CHANGE);
+    pinMode(27, INPUT);
+    pinMode(13, INPUT);
+    attachInterrupt(digitalPinToInterrupt(27), encoderFreeDepanISR, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(13), encoderFreeDepanISR, CHANGE);
+    pinMode(debugLed, OUTPUT);
+    pinMode(kickPin, OUTPUT);
+    expansion.pinMode(irPin, INPUT);
+    // ESP32PWM::allocateTimer(0);
+    // ESP32PWM::allocateTimer(1);
+    // ESP32PWM::allocateTimer(2);
+    // ESP32PWM::allocateTimer(3);
+    servoKick.setPeriodHertz(1000);
+    servoKick.attach(servoPin, 1000, 2000);
 }
 
 void sensorTask(void *parameters)
@@ -177,10 +241,9 @@ void sensorTask(void *parameters)
     {
         vTaskDelay(20 / portTICK_PERIOD_MS);
         bacaEncoder();
-        // Serial.println(velKanan);
         resetEncoder();
+        bacaBNO();
         bacaBola();
-        kickReady();
         stm.publish(&stmData);
     }
 }
@@ -190,7 +253,6 @@ void pwmTask(void *parameters)
     for (;;)
     {
         vTaskDelay(20 / portTICK_PERIOD_MS);
-        // Serial.println("Task PWM");
         pwmOut();
     }
 }
@@ -200,13 +262,12 @@ void kickTask(void *parameters)
     for (;;)
     {
         vTaskDelay(20 / portTICK_PERIOD_MS);
-        // Serial.println("Task Kick");
 
         if (del_kick)
         {
-            // digitalWrite(kick_pin, HIGH);
+            digitalWrite(kickPin, HIGH);
             vTaskDelay(del_kick / portTICK_PERIOD_MS);
-            // digitalWrite(kick_pin, LOW);
+            digitalWrite(kickPin, LOW);
             del_kick = 0;
         }
     }
@@ -214,27 +275,41 @@ void kickTask(void *parameters)
 
 void setup()
 {
-    setPinMode();
-    pinMode(LED_BUILTIN, OUTPUT);
-    pinMode(16, OUTPUT);
-    // expansion.pinMode(P5, OUTPUT);
+    PinInit();
+    expansion.begin();
+    bno.begin();
+    vl.begin();
+    // while (!expansion.begin() || !bno.begin() || !vl.begin())
+    // {
+    //     digitalWrite(debugLed, HIGH);
+    //     delay(200);
+    //     digitalWrite(debugLed, LOW);
+    //     delay(200);
+    // }
+
+    // motorKiri.freq(1000);
+    // motorKanan.freq(1000);
+    // motorBelakang.freq(1000);
+    // motorDribKanan.freq(1000);
+    // motorDribKiri.freq(1000);
+
+    bno.setExtCrystalUse(true);
 
     nh.initNode();
-    // nh.subscribe(pc_data);
-    nh.subscribe(string_data);
+    nh.subscribe(motor_data);
+    nh.subscribe(dribble_data);
+    nh.subscribe(kicker_data);
+    nh.subscribe(servo_data);
 
     nh.advertise(stm);
 
     xTaskCreate(sensorTask, "Sensor Task", 2048, (void *)sensor_data, 1, NULL);
     xTaskCreate(pwmTask, "PWM Task", 2048, (void *)pwm_data, 1, NULL);
     xTaskCreate(kickTask, "Kick Task", 2048, (void *)kick_data, 1, NULL);
-    // Serial.begin(9600);
 }
 
 void loop()
 {
     nh.spinOnce();
-    // Serial.println(velKanan);
     vTaskDelay(20 / portTICK_PERIOD_MS);
-    // delay(20);
 }
