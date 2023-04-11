@@ -21,7 +21,10 @@
 #define kickPin 16
 #define irPin P5
 #define servoPin 17
-bool led_state = 0;
+
+// #define VL
+#define BNO
+bool led_state = 0, vl_state = 0;
 
 PCF8574 expansion(0x20);
 Servo servoKick;
@@ -59,12 +62,14 @@ float motor1 = 0.0,
       drib2 = 0.0,
       sudut = 0.0,
       orientation_x = 0.0,
+      ir_now = 0.0,
+      ir_prev = 0.0,
+      filtered = 0.0,
+      gain = 0.25,
       distance = 0.0;
 
 uint8_t del_kick = 0,
-        servo_angle = 0;
-
-bool ir = 0;
+        servo_angle = 100;
 
 fukuro_common::STMData stmData;
 ros::NodeHandle nh;
@@ -163,15 +168,26 @@ void bacaBNO()
 
 void bacaBola()
 {
-    ir = expansion.digitalRead(irPin);
-    stmData.ir = ir;
-    // if (ir)
-    // {
-    //     VL53L0X_RangingMeasurementData_t measure;
-    //     vl.rangingTest(&measure, false);
-    //     distance = measure.RangeMilliMeter;
-    //     stmData.distance = distance;
-    // }
+    int ir_read = !expansion.digitalRead(irPin);
+    if (ir_read)
+    {
+        vl_state = 1;
+    }
+    filtered = filtered + gain * (ir_read - filtered);
+    // ir_prev = ir_now;
+    stmData.ir = filtered > 0.5 ? 1 : 0;
+
+    if (vl_state)
+    {
+        VL53L0X_RangingMeasurementData_t measure;
+        vl.rangingTest(&measure, false);
+        distance = measure.RangeMilliMeter;
+        stmData.distance = distance;
+        if (distance > 100)
+        {
+            vl_state = 0;
+        };
+    }
 }
 
 void IRAM_ATTR encoderMotorKiriISR()
@@ -282,10 +298,28 @@ void kickTask(void *parameters)
 void setup()
 {
     PinInit();
-    expansion.begin();
-    bno.begin();
-    // vl.begin();
-    while (!expansion.begin() || !bno.begin() /*|| !vl.begin()*/)
+
+#ifdef VL
+    while (!vl.begin())
+    {
+        digitalWrite(debugLed, HIGH);
+        delay(150);
+        digitalWrite(debugLed, LOW);
+        delay(150);
+    }
+#endif
+
+#ifdef BNO
+    while (!bno.begin())
+    {
+        digitalWrite(debugLed, HIGH);
+        delay(150);
+        digitalWrite(debugLed, LOW);
+        delay(150);
+    }
+#endif
+
+    while (!expansion.begin())
     {
         digitalWrite(debugLed, HIGH);
         delay(150);
