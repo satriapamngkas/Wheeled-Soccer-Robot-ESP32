@@ -125,7 +125,7 @@ void pwmOut()
     motorBelakang.speed(motor3);
     motorDribKiri.speed(drib1);
     motorDribKanan.speed(drib2);
-    servoKick.write(servo_angle);
+    // servoKick.write(servo_angle);
 }
 
 void bacaEncoder()
@@ -169,13 +169,15 @@ void bacaBNO()
 void bacaBola()
 {
     int ir_read = !expansion.digitalRead(irPin);
+    filtered = filtered + gain * (ir_read - filtered);
+    // ir_prev = ir_now;
+    stmData.ir = filtered > 0.5 ? 1 : 0;
+
+#ifdef VL
     if (ir_read)
     {
         vl_state = 1;
     }
-    filtered = filtered + gain * (ir_read - filtered);
-    // ir_prev = ir_now;
-    stmData.ir = filtered > 0.5 ? 1 : 0;
 
     if (vl_state)
     {
@@ -188,6 +190,7 @@ void bacaBola()
             vl_state = 0;
         };
     }
+#endif
 }
 
 void IRAM_ATTR encoderMotorKiriISR()
@@ -319,13 +322,13 @@ void setup()
     }
 #endif
 
-    while (!expansion.begin())
-    {
-        digitalWrite(debugLed, HIGH);
-        delay(150);
-        digitalWrite(debugLed, LOW);
-        delay(150);
-    }
+    // while (!expansion.begin())
+    // {
+    //     digitalWrite(debugLed, HIGH);
+    //     delay(150);
+    //     digitalWrite(debugLed, LOW);
+    //     delay(150);
+    // }
 
     // motorKiri.freq(1000);
     // motorKanan.freq(1000);
