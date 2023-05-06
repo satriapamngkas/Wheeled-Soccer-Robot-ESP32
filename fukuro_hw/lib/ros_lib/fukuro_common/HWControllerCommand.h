@@ -21,6 +21,8 @@ namespace fukuro_common
       _dribbler_type dribbler;
       typedef fukuro_common::MotorVel _motor_type;
       _motor_type motor;
+      typedef float _servo_type;
+      _servo_type servo;
       typedef int32_t _kick_type;
       _kick_type kick;
       typedef bool _pwm_test_type;
@@ -32,6 +34,7 @@ namespace fukuro_common
       vel(),
       dribbler(),
       motor(),
+      servo(0),
       kick(0),
       pwm_test(0),
       motor_brake(0)
@@ -44,6 +47,16 @@ namespace fukuro_common
       offset += this->vel.serialize(outbuffer + offset);
       offset += this->dribbler.serialize(outbuffer + offset);
       offset += this->motor.serialize(outbuffer + offset);
+      union {
+        float real;
+        uint32_t base;
+      } u_servo;
+      u_servo.real = this->servo;
+      *(outbuffer + offset + 0) = (u_servo.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_servo.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_servo.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_servo.base >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->servo);
       union {
         int32_t real;
         uint32_t base;
@@ -78,6 +91,17 @@ namespace fukuro_common
       offset += this->dribbler.deserialize(inbuffer + offset);
       offset += this->motor.deserialize(inbuffer + offset);
       union {
+        float real;
+        uint32_t base;
+      } u_servo;
+      u_servo.base = 0;
+      u_servo.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_servo.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_servo.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_servo.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      this->servo = u_servo.real;
+      offset += sizeof(this->servo);
+      union {
         int32_t real;
         uint32_t base;
       } u_kick;
@@ -108,7 +132,7 @@ namespace fukuro_common
     }
 
     virtual const char * getType() override { return "fukuro_common/HWControllerCommand"; };
-    virtual const char * getMD5() override { return "4bcd449447c15ad67162e93c1e7ee8b2"; };
+    virtual const char * getMD5() override { return "aa195a94e4b835ff9b8f3a3151dda37b"; };
 
   };
 

@@ -22,7 +22,7 @@
 #define irPin P5
 #define servoPin 17
 
-// #define VL
+#define VL
 #define BNO
 bool led_state = 0, vl_state = 0;
 
@@ -243,6 +243,7 @@ void PinInit()
     attachInterrupt(digitalPinToInterrupt(26), encoderFreeKiriISR, CHANGE);
     pinMode(33, INPUT);
     pinMode(32, INPUT);
+        // bacaBola();
     attachInterrupt(digitalPinToInterrupt(33), encoderFreeKananISR, CHANGE);
     attachInterrupt(digitalPinToInterrupt(32), encoderFreeKananISR, CHANGE);
     pinMode(27, INPUT);
@@ -267,7 +268,9 @@ void sensorTask(void *parameters)
         vTaskDelay(20 / portTICK_PERIOD_MS);
         bacaEncoder();
         resetEncoder();
+        #ifdef BNO
         bacaBNO();
+        #endif
         bacaBola();
         stm.publish(&stmData);
     }
@@ -322,13 +325,13 @@ void setup()
     }
 #endif
 
-    // while (!expansion.begin())
-    // {
-    //     digitalWrite(debugLed, HIGH);
-    //     delay(150);
-    //     digitalWrite(debugLed, LOW);
-    //     delay(150);
-    // }
+    while (!expansion.begin())
+    {
+        digitalWrite(debugLed, HIGH);
+        delay(150);
+        digitalWrite(debugLed, LOW);
+        delay(150);
+    }
 
     // motorKiri.freq(1000);
     // motorKanan.freq(1000);

@@ -25,6 +25,8 @@ namespace fukuro_common
       _start_type start;
       typedef fukuro_common::Point2d _goal_type;
       _goal_type goal;
+      typedef int64_t _size_type;
+      _size_type size;
       typedef float _search_time_type;
       _search_time_type search_time;
       typedef bool _solved_type;
@@ -37,6 +39,7 @@ namespace fukuro_common
       solutions_length(0), st_solutions(), solutions(nullptr),
       start(),
       goal(),
+      size(0),
       search_time(0),
       solved(0),
       updated(0)
@@ -64,6 +67,20 @@ namespace fukuro_common
       }
       offset += this->start.serialize(outbuffer + offset);
       offset += this->goal.serialize(outbuffer + offset);
+      union {
+        int64_t real;
+        uint64_t base;
+      } u_size;
+      u_size.real = this->size;
+      *(outbuffer + offset + 0) = (u_size.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_size.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_size.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_size.base >> (8 * 3)) & 0xFF;
+      *(outbuffer + offset + 4) = (u_size.base >> (8 * 4)) & 0xFF;
+      *(outbuffer + offset + 5) = (u_size.base >> (8 * 5)) & 0xFF;
+      *(outbuffer + offset + 6) = (u_size.base >> (8 * 6)) & 0xFF;
+      *(outbuffer + offset + 7) = (u_size.base >> (8 * 7)) & 0xFF;
+      offset += sizeof(this->size);
       offset += serializeAvrFloat64(outbuffer + offset, this->search_time);
       union {
         bool real;
@@ -111,6 +128,21 @@ namespace fukuro_common
       }
       offset += this->start.deserialize(inbuffer + offset);
       offset += this->goal.deserialize(inbuffer + offset);
+      union {
+        int64_t real;
+        uint64_t base;
+      } u_size;
+      u_size.base = 0;
+      u_size.base |= ((uint64_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_size.base |= ((uint64_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_size.base |= ((uint64_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_size.base |= ((uint64_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      u_size.base |= ((uint64_t) (*(inbuffer + offset + 4))) << (8 * 4);
+      u_size.base |= ((uint64_t) (*(inbuffer + offset + 5))) << (8 * 5);
+      u_size.base |= ((uint64_t) (*(inbuffer + offset + 6))) << (8 * 6);
+      u_size.base |= ((uint64_t) (*(inbuffer + offset + 7))) << (8 * 7);
+      this->size = u_size.real;
+      offset += sizeof(this->size);
       offset += deserializeAvrFloat64(inbuffer + offset, &(this->search_time));
       union {
         bool real;
@@ -132,7 +164,7 @@ namespace fukuro_common
     }
 
     virtual const char * getType() override { return "fukuro_common/PathPlan"; };
-    virtual const char * getMD5() override { return "bac9c86aba64a149e610ac3cafcaef0c"; };
+    virtual const char * getMD5() override { return "6a83d3c88ab72a8453f5bd8c4eb700b3"; };
 
   };
 

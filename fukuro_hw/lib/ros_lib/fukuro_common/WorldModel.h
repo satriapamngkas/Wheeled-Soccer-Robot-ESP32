@@ -20,6 +20,8 @@ namespace fukuro_common
       _robot_name_type robot_name;
       typedef bool _ball_visible_type;
       _ball_visible_type ball_visible;
+      typedef bool _ballp_visible_type;
+      _ballp_visible_type ballp_visible;
       typedef bool _obstacle_visible_type;
       _obstacle_visible_type obstacle_visible;
       typedef bool _friend_visible_type;
@@ -46,6 +48,10 @@ namespace fukuro_common
       _local_ball_type local_ball;
       typedef geometry_msgs::Point _global_ball_type;
       _global_ball_type global_ball;
+      typedef geometry_msgs::Point _local_ballp_type;
+      _local_ballp_type local_ballp;
+      typedef geometry_msgs::Point _global_ballp_type;
+      _global_ballp_type global_ballp;
       uint32_t local_balls_length;
       typedef geometry_msgs::Point _local_balls_type;
       _local_balls_type st_local_balls;
@@ -80,6 +86,7 @@ namespace fukuro_common
     WorldModel():
       robot_name(""),
       ball_visible(0),
+      ballp_visible(0),
       obstacle_visible(0),
       friend_visible(0),
       available_length(0), st_available(), available(nullptr),
@@ -91,6 +98,8 @@ namespace fukuro_common
       global_friend(),
       local_ball(),
       global_ball(),
+      local_ballp(),
+      global_ballp(),
       local_balls_length(0), st_local_balls(), local_balls(nullptr),
       balls_length(0), st_balls(), balls(nullptr),
       way_points_length(0), st_way_points(), way_points(nullptr),
@@ -118,6 +127,13 @@ namespace fukuro_common
       u_ball_visible.real = this->ball_visible;
       *(outbuffer + offset + 0) = (u_ball_visible.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->ball_visible);
+      union {
+        bool real;
+        uint8_t base;
+      } u_ballp_visible;
+      u_ballp_visible.real = this->ballp_visible;
+      *(outbuffer + offset + 0) = (u_ballp_visible.base >> (8 * 0)) & 0xFF;
+      offset += sizeof(this->ballp_visible);
       union {
         bool real;
         uint8_t base;
@@ -167,6 +183,8 @@ namespace fukuro_common
       offset += this->global_friend.serialize(outbuffer + offset);
       offset += this->local_ball.serialize(outbuffer + offset);
       offset += this->global_ball.serialize(outbuffer + offset);
+      offset += this->local_ballp.serialize(outbuffer + offset);
+      offset += this->global_ballp.serialize(outbuffer + offset);
       *(outbuffer + offset + 0) = (this->local_balls_length >> (8 * 0)) & 0xFF;
       *(outbuffer + offset + 1) = (this->local_balls_length >> (8 * 1)) & 0xFF;
       *(outbuffer + offset + 2) = (this->local_balls_length >> (8 * 2)) & 0xFF;
@@ -244,6 +262,14 @@ namespace fukuro_common
       union {
         bool real;
         uint8_t base;
+      } u_ballp_visible;
+      u_ballp_visible.base = 0;
+      u_ballp_visible.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      this->ballp_visible = u_ballp_visible.real;
+      offset += sizeof(this->ballp_visible);
+      union {
+        bool real;
+        uint8_t base;
       } u_obstacle_visible;
       u_obstacle_visible.base = 0;
       u_obstacle_visible.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
@@ -302,6 +328,8 @@ namespace fukuro_common
       offset += this->global_friend.deserialize(inbuffer + offset);
       offset += this->local_ball.deserialize(inbuffer + offset);
       offset += this->global_ball.deserialize(inbuffer + offset);
+      offset += this->local_ballp.deserialize(inbuffer + offset);
+      offset += this->global_ballp.deserialize(inbuffer + offset);
       uint32_t local_balls_lengthT = ((uint32_t) (*(inbuffer + offset))); 
       local_balls_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
       local_balls_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
@@ -381,7 +409,7 @@ namespace fukuro_common
     }
 
     virtual const char * getType() override { return "fukuro_common/WorldModel"; };
-    virtual const char * getMD5() override { return "83b86ec7340f012e81177e9324633119"; };
+    virtual const char * getMD5() override { return "02c047e59b46f4c9f46bcbf596be20d8"; };
 
   };
 

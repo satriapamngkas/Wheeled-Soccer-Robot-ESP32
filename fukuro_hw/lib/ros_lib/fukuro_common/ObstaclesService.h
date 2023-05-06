@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "ros/msg.h"
-#include "fukuro_common/Obstacle.h"
+#include "fukuro_common/Point2d.h"
 
 namespace fukuro_common
 {
@@ -14,26 +14,43 @@ static const char OBSTACLESSERVICE[] = "fukuro_common/ObstaclesService";
   class ObstaclesServiceRequest : public ros::Msg
   {
     public:
-      uint32_t obstacle_length;
-      typedef fukuro_common::Obstacle _obstacle_type;
-      _obstacle_type st_obstacle;
-      _obstacle_type * obstacle;
+      typedef int64_t _total_type;
+      _total_type total;
+      uint32_t obstacles_length;
+      typedef fukuro_common::Point2d _obstacles_type;
+      _obstacles_type st_obstacles;
+      _obstacles_type * obstacles;
 
     ObstaclesServiceRequest():
-      obstacle_length(0), st_obstacle(), obstacle(nullptr)
+      total(0),
+      obstacles_length(0), st_obstacles(), obstacles(nullptr)
     {
     }
 
     virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
-      *(outbuffer + offset + 0) = (this->obstacle_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->obstacle_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->obstacle_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->obstacle_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->obstacle_length);
-      for( uint32_t i = 0; i < obstacle_length; i++){
-      offset += this->obstacle[i].serialize(outbuffer + offset);
+      union {
+        int64_t real;
+        uint64_t base;
+      } u_total;
+      u_total.real = this->total;
+      *(outbuffer + offset + 0) = (u_total.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_total.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_total.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_total.base >> (8 * 3)) & 0xFF;
+      *(outbuffer + offset + 4) = (u_total.base >> (8 * 4)) & 0xFF;
+      *(outbuffer + offset + 5) = (u_total.base >> (8 * 5)) & 0xFF;
+      *(outbuffer + offset + 6) = (u_total.base >> (8 * 6)) & 0xFF;
+      *(outbuffer + offset + 7) = (u_total.base >> (8 * 7)) & 0xFF;
+      offset += sizeof(this->total);
+      *(outbuffer + offset + 0) = (this->obstacles_length >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (this->obstacles_length >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (this->obstacles_length >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (this->obstacles_length >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->obstacles_length);
+      for( uint32_t i = 0; i < obstacles_length; i++){
+      offset += this->obstacles[i].serialize(outbuffer + offset);
       }
       return offset;
     }
@@ -41,23 +58,38 @@ static const char OBSTACLESSERVICE[] = "fukuro_common/ObstaclesService";
     virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
-      uint32_t obstacle_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      obstacle_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      obstacle_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      obstacle_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->obstacle_length);
-      if(obstacle_lengthT > obstacle_length)
-        this->obstacle = (fukuro_common::Obstacle*)realloc(this->obstacle, obstacle_lengthT * sizeof(fukuro_common::Obstacle));
-      obstacle_length = obstacle_lengthT;
-      for( uint32_t i = 0; i < obstacle_length; i++){
-      offset += this->st_obstacle.deserialize(inbuffer + offset);
-        memcpy( &(this->obstacle[i]), &(this->st_obstacle), sizeof(fukuro_common::Obstacle));
+      union {
+        int64_t real;
+        uint64_t base;
+      } u_total;
+      u_total.base = 0;
+      u_total.base |= ((uint64_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_total.base |= ((uint64_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_total.base |= ((uint64_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_total.base |= ((uint64_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      u_total.base |= ((uint64_t) (*(inbuffer + offset + 4))) << (8 * 4);
+      u_total.base |= ((uint64_t) (*(inbuffer + offset + 5))) << (8 * 5);
+      u_total.base |= ((uint64_t) (*(inbuffer + offset + 6))) << (8 * 6);
+      u_total.base |= ((uint64_t) (*(inbuffer + offset + 7))) << (8 * 7);
+      this->total = u_total.real;
+      offset += sizeof(this->total);
+      uint32_t obstacles_lengthT = ((uint32_t) (*(inbuffer + offset))); 
+      obstacles_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
+      obstacles_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
+      obstacles_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
+      offset += sizeof(this->obstacles_length);
+      if(obstacles_lengthT > obstacles_length)
+        this->obstacles = (fukuro_common::Point2d*)realloc(this->obstacles, obstacles_lengthT * sizeof(fukuro_common::Point2d));
+      obstacles_length = obstacles_lengthT;
+      for( uint32_t i = 0; i < obstacles_length; i++){
+      offset += this->st_obstacles.deserialize(inbuffer + offset);
+        memcpy( &(this->obstacles[i]), &(this->st_obstacles), sizeof(fukuro_common::Point2d));
       }
      return offset;
     }
 
     virtual const char * getType() override { return OBSTACLESSERVICE; };
-    virtual const char * getMD5() override { return "0c04b02beeb901211c5a0f08490a07a3"; };
+    virtual const char * getMD5() override { return "907b339499491383a73548a99de15df6"; };
 
   };
 

@@ -14,6 +14,8 @@ namespace fukuro_common
     public:
       typedef bool _ball_engage_type;
       _ball_engage_type ball_engage;
+      typedef float _ball_distance_type;
+      _ball_distance_type ball_distance;
       typedef bool _collision_type;
       _collision_type collision;
       typedef bool _ready_kick_type;
@@ -21,6 +23,7 @@ namespace fukuro_common
 
     RobotUtility():
       ball_engage(0),
+      ball_distance(0),
       collision(0),
       ready_kick(0)
     {
@@ -36,6 +39,16 @@ namespace fukuro_common
       u_ball_engage.real = this->ball_engage;
       *(outbuffer + offset + 0) = (u_ball_engage.base >> (8 * 0)) & 0xFF;
       offset += sizeof(this->ball_engage);
+      union {
+        float real;
+        uint32_t base;
+      } u_ball_distance;
+      u_ball_distance.real = this->ball_distance;
+      *(outbuffer + offset + 0) = (u_ball_distance.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_ball_distance.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_ball_distance.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_ball_distance.base >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->ball_distance);
       union {
         bool real;
         uint8_t base;
@@ -65,6 +78,17 @@ namespace fukuro_common
       this->ball_engage = u_ball_engage.real;
       offset += sizeof(this->ball_engage);
       union {
+        float real;
+        uint32_t base;
+      } u_ball_distance;
+      u_ball_distance.base = 0;
+      u_ball_distance.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_ball_distance.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_ball_distance.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_ball_distance.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      this->ball_distance = u_ball_distance.real;
+      offset += sizeof(this->ball_distance);
+      union {
         bool real;
         uint8_t base;
       } u_collision;
@@ -84,7 +108,7 @@ namespace fukuro_common
     }
 
     virtual const char * getType() override { return "fukuro_common/RobotUtility"; };
-    virtual const char * getMD5() override { return "06d17b852ebfd0c52f93f85e39a6a1ce"; };
+    virtual const char * getMD5() override { return "aaa97d54de402a9e7dc9f3a4b32660e0"; };
 
   };
 
